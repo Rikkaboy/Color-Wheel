@@ -1,57 +1,139 @@
-﻿using System.Collections;
+﻿// Color Selection Script
+// Created by Sam Moore
+// Last Updated: 2/01/2018
+
+// Selects object in front of player, then opens Color Wheel GUI for color selection
+// Controls: Left click to select color and N to cancel
+// Triggered from Radial Menu (CapsLock)
+
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
-public class color_select : MonoBehaviour {
+public class color_select : Crosshair {
     public Texture2D colorPicker;
     public GameObject Sample;
     public Rect colorPanel;
+    public Camera mainCamera;
 
+
+    //public bool SelectMode;
+    public bool SelectMode;
+    public bool ColorMode;
+    public GameObject SelectedObj;
     public Color col;
     Vector2 pickpos;
 
+    MouseLook LookerX;
+    MouseLook LookerY;
+
     // Use this for initialization
     void Start () {
-		
-	}
+        SelectMode = false;
+        ColorMode = false;
+        SelectedObj = null;
+        gameObject.SetActive(false);
+        LookerX = GameObject.FindGameObjectWithTag("ADAM").GetComponent<MouseLook>();
+        LookerY = mainCamera.GetComponent<MouseLook>();
+
+        //center color panel on screen, above inventory hotbar
+        colorPanel.x = Screen.width/2 - colorPanel.width/2;
+        colorPanel.y = Screen.height/2 - colorPanel.height/2 - Screen.height/40; //Screen.height/40 is arbitrarily chosen to raise the panel a bit
+        float y = Sample.GetComponent<RectTransform>().anchoredPosition.y + Screen.height/40;
+		Sample.GetComponent<RectTransform>().anchoredPosition = new Vector2(Sample.GetComponent<RectTransform>().anchoredPosition.x,y);
+
+    }
 	
 	// Update is called once per frame
 	void Update () {
-       
+        // Raycast for object
+        if(SelectedObj == null && SelectMode == true)
+        {
+            RaycastHit hit;
+            Ray ray = mainCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+            if(Physics.Raycast(ray, out hit))
+            {
+                SelectedObj = hit.transform.gameObject;
+                Debug.Log("Object Selected: " + SelectedObj);
+                SelectMode = false;
+                ColorMode = true;
+                Sample.SetActive(true);
+                col = SelectedObj.GetComponent<Renderer>().material.color;
+
+                //Frees Cursor
+                Crosshair.SetCursorEnabled();
+                LookerX.enabled = false;
+                LookerY.enabled = false;
+
+            }
+            else
+            {
+                Debug.Log("No object found");
+
+                SelectMode = false;
+                ColorMode = false;
+                SelectedObj = null;
+                Sample.SetActive(false);
+                gameObject.SetActive(false);
+            }
+        }
+
+        //Color is selected
+        if(Input.GetMouseButtonDown(0))
+        {
+            SelectedObj.GetComponent<Renderer>().material.color = col;
+            SelectMode = false;
+            ColorMode = false;
+            SelectedObj = null;
+            Sample.SetActive(false);
+            gameObject.SetActive(false);
+
+            // Returns to Crosshair
+            Crosshair.SetCrosshairEnabled();
+            LookerX.enabled = true;
+            LookerY.enabled = true;
+        }
+
+        //Color select canceled
+        if(ColorMode && Input.GetKeyDown(KeyCode.N))
+        {
+            SelectMode = false;
+            ColorMode = false;
+            SelectedObj = null;
+            Sample.SetActive(false);
+            gameObject.SetActive(false);
+
+            //Returns to Crosshair
+            Crosshair.SetCrosshairEnabled();
+            LookerX.enabled = true;
+            LookerY.enabled = true;
+        }
     }
-    //void OnMouseDown()
-    //{
-       // float aaa = pickpos.x - transform.position.x;
-        //float bbb = pickpos.y - transform.position.y;
-        //int height = (int) GetComponent<Collider2D>().bounds.size.y;
-        //int width = (int)GetComponent<Collider2D>().bounds.size.x;
-
-        //int aaa2 = (int)(aaa * (wheel.width / (width + 0.0f)));
-        //int bbb2 = (int)((height - bbb) * (wheel.height / (height + 0.0f)));
-
-        //col = wheel.GetPixel(aaa2, bbb2);
-        //Sample.GetComponent<Renderer>().material.color = col;
-        
-    //}
     
     void OnGUI()
     {
-        GUI.DrawTexture(colorPanel, colorPicker);
-        
-        if (GUI.RepeatButton(colorPanel, ""))
+        // color wheel is only active if ColorMode = true
+        if (ColorMode)
         {
+            GUI.backgroundColor = Color.clear;
+            GUI.DrawTexture(colorPanel, colorPicker);
             Vector2 pickpos = Event.current.mousePosition;
-            int aaa = (int)(pickpos.x - colorPanel.x);
-            int bbb = (int)(pickpos.y - colorPanel.y);
-            col = colorPicker.GetPixel(aaa, 700-bbb);
-            Debug.Log(col.ToString());
-            if(col.a == 1)
+            float xx = (pickpos.x - colorPanel.x) / colorPanel.width;
+            float yy = (pickpos.y - colorPanel.y) / colorPanel.height;
+            yy = 1.0f - yy;
+            col = colorPicker.GetPixelBilinear(xx, yy);
+                
+            if (col.a != 0)
             {
-                Sample.GetComponent<Renderer>().material.color = col;
+                Sample.GetComponent<Image>().color = col;
             }
-            
-
-
         }
-    } 
+    }
+
+    public void EnableSelectionMode()
+    {
+        SelectMode = true;
+        gameObject.SetActive(true);
+    }
 }
