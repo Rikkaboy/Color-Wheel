@@ -1,6 +1,6 @@
 ﻿// Color Selection Script
 // Created by Sam Moore
-// Last Updated: 2/01/2018
+// Last Updated: 2/02/2018
 
 // Selects object in front of player, then opens Color Wheel GUI for color selection
 // Controls: Left click to select color and N to cancel
@@ -23,10 +23,10 @@ public class color_select : Crosshair {
     public bool ColorMode;
     public GameObject SelectedObj;
     public Color col;
-    Vector2 pickpos;
+    private Vector2 pickpos;
 
-    MouseLook LookerX;
-    MouseLook LookerY;
+    private MouseLook LookerX;
+    private MouseLook LookerY;
 
     // Use this for initialization
     void Start () {
@@ -36,7 +36,6 @@ public class color_select : Crosshair {
         gameObject.SetActive(false);
         LookerX = GameObject.FindGameObjectWithTag("ADAM").GetComponent<MouseLook>();
         LookerY = mainCamera.GetComponent<MouseLook>();
-
         //center color panel on screen, above inventory hotbar
         colorPanel.x = Screen.width/2 - colorPanel.width/2;
         colorPanel.y = Screen.height/2 - colorPanel.height/2 - Screen.height/40; //Screen.height/40 is arbitrarily chosen to raise the panel a bit
@@ -48,7 +47,7 @@ public class color_select : Crosshair {
 	// Update is called once per frame
 	void Update () {
         // Raycast for object
-        if(SelectedObj == null && SelectMode == true)
+        if(SelectMode == true)
         {
             RaycastHit hit;
             Ray ray = mainCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
@@ -60,6 +59,7 @@ public class color_select : Crosshair {
                 ColorMode = true;
                 Sample.SetActive(true);
                 col = SelectedObj.GetComponent<Renderer>().material.color;
+                Sample.GetComponent<Image>().color = col;
 
                 //Frees Cursor
                 Crosshair.SetCursorEnabled();
@@ -77,10 +77,10 @@ public class color_select : Crosshair {
                 Sample.SetActive(false);
                 gameObject.SetActive(false);
             }
-        }
+    }
 
         //Color is selected
-        if(Input.GetMouseButtonDown(0))
+        if(Input.GetMouseButtonDown(0) && ColorMode)
         {
             SelectedObj.GetComponent<Renderer>().material.color = col;
             SelectMode = false;
@@ -133,7 +133,7 @@ public class color_select : Crosshair {
 
     public void EnableSelectionMode()
     {
-        SelectMode = true;
         gameObject.SetActive(true);
+        SelectMode = true;
     }
 }
